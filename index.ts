@@ -6,11 +6,14 @@ const url = "https://telegram.hypurr.fun/hypurr.Telegram/HyperliquidLaunchTrade"
 const headers = {
   "accept": "application/grpc-web-text",
   "content-type": "application/grpc-web-text",
-  "x-grpc-web": "1"
+  "x-grpc-web": "1",
 };
 
-const successMessage = "Bought"; // Fragmento del mensaje que indica éxito
-const insufficientBalanceMessage = "Insufficient balance"; // Fragmento del mensaje que indica saldo insuficiente
+const successMessages = {
+  buy: "Bought", // Mensaje de éxito para comprar
+  sell: "Sold",  // Mensaje de éxito para vender
+};
+const insufficientBalanceMessage = "Insufficient balance"; // Mensaje de saldo insuficiente
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -19,6 +22,21 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
+
+const askForMode = (): Promise<"buy" | "sell"> =>
+  new Promise((resolve) => {
+    rl.question(
+      chalk.cyan("¿Qué deseas hacer? (buy/sell) [default: buy]: "),
+      (mode) => {
+        if (mode.trim() === "" || mode === "buy" || mode === "sell") {
+          resolve(mode.trim() === "sell" ? "sell" : "buy");
+        } else {
+          console.log(chalk.red("Opción inválida. Por favor, escribe 'buy' o 'sell'."));
+          resolve(askForMode());
+        }
+      }
+    );
+  });
 
 const askForBody = (): Promise<string> =>
   new Promise((resolve) => {
@@ -34,7 +52,9 @@ const askForBody = (): Promise<string> =>
   });
 
 async function sendRequestUntilSuccess (): Promise<void> {
+  const mode = await askForMode();
   const body = await askForBody();
+  const successMessage = successMessages[mode];
   let attempts = 0;
   let failedAttempts = 0;
 
@@ -59,7 +79,7 @@ async function sendRequestUntilSuccess (): Promise<void> {
 
       if (decodedResponse.includes(successMessage)) {
         const totalTime = (performance.now() - startTime).toFixed(3); // Tiempo total desde el inicio del script
-        console.log(chalk.green("\n¡Compra exitosa encontrada!"));
+        console.log(chalk.green(`\n¡Operación exitosa (${mode}) encontrada!`));
         console.log(chalk.green(decodedResponse));
         console.log(chalk.blue(`Tiempo total: ${totalTime} ms`));
         console.log(chalk.blue(`Intentos realizados: ${attempts}`));
