@@ -1,4 +1,4 @@
-# bot_hypur
+# HypurCLI
 
 To install dependencies:
 
